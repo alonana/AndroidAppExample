@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.example.myapplication.databinding.FragmentFirstBinding;
+import com.example.myapplication.rest.RestTask;
 
 public class FirstFragment extends Fragment {
 
@@ -42,10 +43,14 @@ public class FirstFragment extends Fragment {
         );
 
         binding.toastButton.setOnClickListener(view1 -> {
-                    Toast myToast = Toast.makeText(getActivity(), "Hello toast!", Toast.LENGTH_SHORT);
+            new RestTask(response -> {
+                getActivity().runOnUiThread(() -> {
+                    Toast myToast = Toast.makeText(getActivity(), response.toString(), Toast.LENGTH_SHORT);
                     myToast.show();
-                }
-        );
+
+                });
+            }).execute();
+        });
 
         binding.buttonCount.setOnClickListener(this::countMe);
     }

@@ -3,6 +3,7 @@ package com.example.myapplication.rest;
 import android.os.AsyncTask;
 
 import com.example.myapplication.MyAppException;
+import com.example.myapplication.bouncer.InputReader;
 
 import org.json.JSONArray;
 import org.json.JSONObject;

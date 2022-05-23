@@ -1,9 +1,10 @@
-package com.example.myapplication.rest;
+package com.example.myapplication.bouncer;
 
 import com.example.myapplication.MyAppException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 public class InputReader {
     public static String readToString(InputStream in) {
@@ -17,7 +18,7 @@ public class InputReader {
                 }
                 buffers.write(buffer, 0, n);
             }
-            return new String(buffers.toByteArray(), "UTF-8");
+            return buffers.toString(StandardCharsets.UTF_8.toString());
         } catch (Exception e) {
             throw new MyAppException(e);
         }

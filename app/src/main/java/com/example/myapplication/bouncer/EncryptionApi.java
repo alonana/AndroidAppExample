@@ -29,7 +29,7 @@ public class EncryptionApi {
         }
     }
 
-    private static String bytesToHexString(byte[] bytes) {
+    public static String bytesToHexString(byte[] bytes) {
         StringBuilder hexString = new StringBuilder(2 * bytes.length);
         for (byte aByte : bytes) {
             String hex = Integer.toHexString(0xff & aByte);

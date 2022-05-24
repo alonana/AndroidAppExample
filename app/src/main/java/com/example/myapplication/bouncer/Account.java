@@ -96,24 +96,24 @@ public class Account {
     }
 
     private void postToAdmission(String urlSuffix, HashMap<String, String> body) {
-        body.put("guid", this.guid);
-        body['host'] = this.url_access.original_host
-        body['url'] = this.url_access.original_path
-        body['account'] = this.account.address
-
-        admission_host = this.url_access.original_host
-        if 'ADMISSION_URL' in os.environ:
-        admission_host = os.environ['ADMISSION_URL']
-
-        bouncer_url = '{}/bouncer/admission/{}'.format(admission_host, url_suffix)
-        debug('client post: {} with body {}'.format(bouncer_url, body))
-        response = requests.post(bouncer_url, json=body, verify=False)
-        if response.status_code != 200:
-        raise Exception('post to {} failed: {}: {}'.format(bouncer_url, response.status_code, response.text))
-
-        this.server_response = response.json()
-        debug('server response: {}'.format(this.server_response))
-        if 'directAccess' in this.server_response and this.server_response['directAccess'] == 'True':
-        this.access_granted = True
+//        body.put("guid", this.guid);
+//        body['host'] = this.url_access.original_host
+//        body['url'] = this.url_access.original_path
+//        body['account'] = this.account.address
+//
+//        admission_host = this.url_access.original_host
+//        if 'ADMISSION_URL' in os.environ:
+//        admission_host = os.environ['ADMISSION_URL']
+//
+//        bouncer_url = '{}/bouncer/admission/{}'.format(admission_host, url_suffix)
+//        debug('client post: {} with body {}'.format(bouncer_url, body))
+//        response = requests.post(bouncer_url, json=body, verify=False)
+//        if response.status_code != 200:
+//        raise Exception('post to {} failed: {}: {}'.format(bouncer_url, response.status_code, response.text))
+//
+//        this.server_response = response.json()
+//        debug('server response: {}'.format(this.server_response))
+//        if 'directAccess' in this.server_response and this.server_response['directAccess'] == 'True':
+//        this.access_granted = True
     }
 }

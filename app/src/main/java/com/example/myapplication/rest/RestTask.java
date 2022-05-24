@@ -3,6 +3,7 @@ package com.example.myapplication.rest;
 import android.os.AsyncTask;
 
 import com.example.myapplication.MyAppException;
+import com.example.myapplication.bouncer.EncryptionKey;
 import com.example.myapplication.bouncer.InputReader;
 
 import org.json.JSONArray;
@@ -24,6 +25,18 @@ public class RestTask extends AsyncTask<Void, Void, Void> {
     @Override
     protected Void doInBackground(Void... voids) {
         try {
+
+            EncryptionKey key = new EncryptionKey();
+            String text = "Hello World! My name is Indigo Montoya. You have killed my father, prepare to die!";
+            String signature = key.signAsHexString(text);
+            System.out.println(signature);
+            key.validate(text, signature);
+
+            String exportKeyPair = key.exportKeyPair();
+            EncryptionKey importedKey = new EncryptionKey(exportKeyPair);
+            importedKey.validate(text, signature);
+
+
             URL url = new URL("https://gorest.co.in/public/v2/users");
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
             connection.setRequestMethod("GET");

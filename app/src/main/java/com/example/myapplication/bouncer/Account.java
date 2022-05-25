@@ -16,7 +16,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -26,7 +25,7 @@ public class Account {
     private final EncryptionKey accountKey;
     private final String guid;
     private boolean accessGranted;
-    private HashMap<String, String> admissionResponse;
+    private JSONObject admissionResponse;
 
 
     public Account(UrlAccess urlAccess) {
@@ -126,24 +125,28 @@ public class Account {
 
     private void sendCheck() {
         HashMap<String, String> body = new HashMap<>();
-        this.postToAdmission("check", body);
+        this.sendToAdmissionWrapper("check", body);
     }
 
-    private void postToAdmission(String urlSuffix, HashMap<String, String> body) {
-        body.put("guid", this.guid);
-        body.put("host", this.urlAccess.getOriginalHost());
-        body.put("url", this.urlAccess.getOriginalPath());
-        body.put("'account'", this.accountKey.getAddress());
+    private void sendToAdmissionWrapper(String urlSuffix, HashMap<String, String> body) {
+        try {
+            body.put("guid", this.guid);
+            body.put("host", this.urlAccess.getOriginalHost());
+            body.put("url", this.urlAccess.getOriginalPath());
+            body.put("'account'", this.accountKey.getAddress());
 
-        String bouncerUrl = Bouncer.getInstance().getAdmissionUrl() + "/bouncer/admission/" + urlSuffix;
-        this.admissionResponse = this.sendRequestToAdmission(bouncerUrl, body);
-        String directAccess = this.admissionResponse.get("directAccess");
-        if (Objects.equals(directAccess, "True")) {
-            this.accessGranted = true;
+            String bouncerUrl = Bouncer.getInstance().getAdmissionUrl() + "/bouncer/admission/" + urlSuffix;
+            this.admissionResponse = this.sendToAdmission(bouncerUrl, body);
+            if (this.admissionResponse.has("directAccess") &&
+                    this.admissionResponse.getBoolean("directAccess")) {
+                this.accessGranted = true;
+            }
+        } catch (Exception e) {
+            throw new BouncerException(e);
         }
     }
 
-    protected HashMap<String, String> sendRequestToAdmission(String accessUrl, HashMap<String, String> bodyMap) {
+    protected JSONObject sendToAdmission(String accessUrl, HashMap<String, String> bodyMap) {
         try {
             URL url = new URL(accessUrl);
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
@@ -163,18 +166,91 @@ public class Account {
 
             JSONObject jsonObject = new JSONObject(InputReader.readToString(connection.getInputStream()));
             connection.disconnect();
-            HashMap<String, String> responseMap = new HashMap<>();
-            Iterator<String> keysIterator = jsonObject.keys();
-            while (keysIterator.hasNext()) {
-                String key = keysIterator.next();
-                responseMap.put(key, jsonObject.getString(key));
-            }
-            return responseMap;
+            return jsonObject;
         } catch (Exception e) {
             throw new MyAppException(e);
         }
     }
 
     private void sendNextAction() {
+        try {
+            String nextAction = this.admissionResponse.getString("method");
+            switch (nextAction) {
+                case "AddAccount":
+                    this.actionWithChallenge("add-account");
+                    break;
+                case "AddToken":
+                    this.actionWithChallenge("add-token");
+                    break;
+                case "AddEther":
+                    this.actionWithChallenge("add-ether");
+                    break;
+                case "PayToken":
+                    this.actionPayToken();
+                    break;
+                default:
+                    throw new BouncerException("unknown next action method " + nextAction);
+            }
+        } catch (Exception e) {
+            throw new BouncerException(e);
+        }
+    }
+
+    private void actionPayToken() {
+        try {
+            if (this.payDebt()) {
+                return;
+            }
+
+            this.payTokenOnce(this.guid, this.admissionResponse.getInt("urlTokens"), this.urlAccess.getOriginalPath(), false);
+            this.accessGranted = true;
+        } catch (Exception e) {
+            throw new BouncerException(e);
+        }
+    }
+
+    private boolean payDebt() {
+        try {
+            if (!this.admissionResponse.has("debt")) {
+                return false;
+            }
+
+            JSONObject debt = this.admissionResponse.getJSONObject("debt");
+            Iterator<String> debtIterator = debt.keys();
+            while (debtIterator.hasNext()) {
+                String debtGuid = debtIterator.next();
+                JSONObject debtDetails = debt.getJSONObject(debtGuid);
+                int price = debtDetails.getInt("price");
+                String url = debtDetails.getString("url");
+                this.payTokenOnce(debtGuid, price, url, true);
+            }
+
+            return false;
+        } catch (Exception e) {
+            throw new BouncerException(e);
+        }
+    }
+
+    private void payTokenOnce(String guid, int urlTokens, String url, boolean isDebt) {
+        String signText = guid + Boolean.toString(isDebt).toLowerCase();
+        String signature = this.accountKey.signAsHexString(signText);
+        HashMap<String, String> body = new HashMap<>();
+        body.put("tokens", Integer.toString(urlTokens));
+        body.put("url", url);
+        body.put("guid", guid);
+        body.put("signature", signature);
+        this.sendToAdmissionWrapper("ay-token", body);
+    }
+
+    private void actionWithChallenge(String method) {
+        try {
+            String challenge = this.admissionResponse.getString("challenge");
+            int difficulty = this.admissionResponse.getInt("difficulty");
+            ChallengeSolver solver = new ChallengeSolver(challenge, difficulty);
+            HashMap<String, String> body = solver.solve();
+            this.sendToAdmissionWrapper(method, body);
+        } catch (Exception e) {
+            throw new BouncerException(e);
+        }
     }
 }

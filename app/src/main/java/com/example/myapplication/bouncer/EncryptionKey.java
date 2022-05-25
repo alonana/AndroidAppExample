@@ -47,8 +47,8 @@ public class EncryptionKey {
             String hexPrivateKey = hexKeys[0];
             String hexPublicKey = hexKeys[1];
 
-            byte[] bytesPrivateKey = EncryptionApi.hexStringToByteArray(hexPrivateKey);
-            byte[] bytesPublicKey = EncryptionApi.hexStringToByteArray(hexPublicKey);
+            byte[] bytesPrivateKey = BytesUtils.hexStringToByteArray(hexPrivateKey);
+            byte[] bytesPublicKey = BytesUtils.hexStringToByteArray(hexPublicKey);
 
             PKCS8EncodedKeySpec specPrivateKey = new PKCS8EncodedKeySpec(bytesPrivateKey);
             X509EncodedKeySpec specPublicKey = new X509EncodedKeySpec(bytesPublicKey);
@@ -68,13 +68,13 @@ public class EncryptionKey {
     private String calculateAddress() {
         try {
             ECPublicKey ecPublicKey = (ECPublicKey) this.keyPair.getPublic();
-            String x = EncryptionApi.bytesToHexString(ecPublicKey.getW().getAffineX().toByteArray());
-            String y = EncryptionApi.bytesToHexString(ecPublicKey.getW().getAffineY().toByteArray());
+            String x = BytesUtils.bytesToHexString(ecPublicKey.getW().getAffineX().toByteArray());
+            String y = BytesUtils.bytesToHexString(ecPublicKey.getW().getAffineY().toByteArray());
             String addressString = "{" +
                     "\"X\":\"" + x + "\"," +
                     "\"Y\":\"" + y + "\"" +
                     "}";
-            return EncryptionApi.toBase64(addressString);
+            return BytesUtils.toBase64(addressString);
         } catch (Exception e) {
             throw new BouncerException(e);
         }
@@ -83,8 +83,8 @@ public class EncryptionKey {
     public String exportKeyPair() {
         byte[] bytesPrivateKey = this.keyPair.getPrivate().getEncoded();
         byte[] bytesPublicKey = this.keyPair.getPublic().getEncoded();
-        String hexPrivateKey = EncryptionApi.bytesToHexString(bytesPrivateKey);
-        String hexPublicKey = EncryptionApi.bytesToHexString(bytesPublicKey);
+        String hexPrivateKey = BytesUtils.bytesToHexString(bytesPrivateKey);
+        String hexPublicKey = BytesUtils.bytesToHexString(bytesPublicKey);
         return hexPrivateKey + " " + hexPublicKey;
     }
 
@@ -98,7 +98,7 @@ public class EncryptionKey {
             ecdsa.update(textBytes);
 
             byte[] signatureBytes = ecdsa.sign();
-            return EncryptionApi.bytesToHexString(signatureBytes);
+            return BytesUtils.bytesToHexString(signatureBytes);
         } catch (Exception e) {
             throw new BouncerException(e);
         }
@@ -113,7 +113,7 @@ public class EncryptionKey {
             byte[] textBytes = text.getBytes(StandardCharsets.UTF_8);
             ecdsa.update(textBytes);
 
-            byte[] signatureBytes = EncryptionApi.hexStringToByteArray(signatureHex);
+            byte[] signatureBytes = BytesUtils.hexStringToByteArray(signatureHex);
 
             if (!ecdsa.verify(signatureBytes)) {
                 throw new BouncerException("verify failed");

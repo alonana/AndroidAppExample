@@ -4,7 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Base64;
 
-public class EncryptionApi {
+public class BytesUtils {
 
     public static byte[] hexStringToByteArray(String hexString) {
         int len = hexString.length();
@@ -16,15 +16,11 @@ public class EncryptionApi {
         return data;
     }
 
-    private static String sha256(String text) {
-        return sha256(text.getBytes(StandardCharsets.UTF_8));
-    }
 
-    private static String sha256(byte[] textBytes) {
+    public static byte[] sha256(byte[] textBytes) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashBytes = digest.digest(textBytes);
-            return bytesToHexString(hashBytes);
+            return digest.digest(textBytes);
         } catch (Exception e) {
             throw new BouncerException(e);
         }
@@ -49,5 +45,35 @@ public class EncryptionApi {
             throw new BouncerException(e);
         }
     }
+
+    public static String removeHexPrefix(String hexString) {
+        if (hexString.startsWith("0x")) {
+            return hexString.substring(2);
+        }
+
+        return hexString;
+    }
+
+    private static int getBit(byte[] data, int pos) {
+        int posByte = pos / 8;
+        int posBit = pos % 8;
+        byte valByte = data[posByte];
+        return valByte >> (8 - (posBit + 1)) & 0x0001;
+    }
+
+    public static int countTrailingZeroBits(byte[] bytes) {
+        int bitsCount = bytes.length * 8;
+        int currentBit = bitsCount - 1;
+        int zeroBitsCount = 0;
+        while (currentBit > 0) {
+            int bit = getBit(bytes, currentBit);
+            if (bit == 1) {
+                return zeroBitsCount;
+            }
+            currentBit--;
+        }
+        return zeroBitsCount;
+    }
+
 
 }

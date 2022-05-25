@@ -2,6 +2,7 @@ package com.example.myapplication.bouncer;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Base64;
 
 public class EncryptionApi {
 
@@ -41,5 +42,12 @@ public class EncryptionApi {
         return hexString.toString();
     }
 
+    public static String toBase64(String text) {
+        try {
+            return Base64.getEncoder().encodeToString(text.getBytes(StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            throw new BouncerException(e);
+        }
+    }
 
 }

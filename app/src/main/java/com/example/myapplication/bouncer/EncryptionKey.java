@@ -11,6 +11,7 @@ import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.Signature;
+import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
@@ -26,25 +27,17 @@ public class EncryptionKey {
     }
 
     private final KeyPair keyPair;
+    private final String address;
 
     public EncryptionKey() {
         try {
             KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
-
             keyGen.initialize(new ECGenParameterSpec("secp256k1"), new SecureRandom());
-
             this.keyPair = keyGen.generateKeyPair();
+            this.address = this.calculateAddress();
         } catch (Exception e) {
             throw new BouncerException(e);
         }
-    }
-
-    public String exportKeyPair() {
-        byte[] bytesPrivateKey = this.keyPair.getPrivate().getEncoded();
-        byte[] bytesPublicKey = this.keyPair.getPublic().getEncoded();
-        String hexPrivateKey = EncryptionApi.bytesToHexString(bytesPrivateKey);
-        String hexPublicKey = EncryptionApi.bytesToHexString(bytesPublicKey);
-        return hexPrivateKey + " " + hexPublicKey;
     }
 
     public EncryptionKey(String exportedKeyPair) {
@@ -66,9 +59,33 @@ public class EncryptionKey {
             PublicKey publicKey = factory.generatePublic(specPublicKey);
 
             this.keyPair = new KeyPair(publicKey, privateKey);
+            this.address = this.calculateAddress();
         } catch (Exception e) {
             throw new BouncerException(e);
         }
+    }
+
+    private String calculateAddress() {
+        try {
+            ECPublicKey ecPublicKey = (ECPublicKey) this.keyPair.getPublic();
+            String x = EncryptionApi.bytesToHexString(ecPublicKey.getW().getAffineX().toByteArray());
+            String y = EncryptionApi.bytesToHexString(ecPublicKey.getW().getAffineY().toByteArray());
+            String addressString = "{" +
+                    "\"X\":\"" + x + "\"," +
+                    "\"Y\":\"" + y + "\"" +
+                    "}";
+            return EncryptionApi.toBase64(addressString);
+        } catch (Exception e) {
+            throw new BouncerException(e);
+        }
+    }
+
+    public String exportKeyPair() {
+        byte[] bytesPrivateKey = this.keyPair.getPrivate().getEncoded();
+        byte[] bytesPublicKey = this.keyPair.getPublic().getEncoded();
+        String hexPrivateKey = EncryptionApi.bytesToHexString(bytesPrivateKey);
+        String hexPublicKey = EncryptionApi.bytesToHexString(bytesPublicKey);
+        return hexPrivateKey + " " + hexPublicKey;
     }
 
     public String signAsHexString(String text) {
@@ -104,5 +121,9 @@ public class EncryptionKey {
         } catch (Exception e) {
             throw new BouncerException(e);
         }
+    }
+
+    public String getAddress() {
+        return address;
     }
 }

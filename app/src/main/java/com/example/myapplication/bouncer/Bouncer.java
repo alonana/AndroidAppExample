@@ -13,6 +13,7 @@ public class Bouncer {
     }
 
     private Context context;
+    private String admissionUrl;
 
     private Bouncer() {
     }
@@ -21,26 +22,26 @@ public class Bouncer {
         this.context = context;
     }
 
-    public ServerResponse sendGet(String url, HashMap<String,String> headers){
-        UrlAccess urlAccess = new UrlAccess(url,headers);
+    public Context getContext() {
+        return context;
+    }
+
+    public String getAdmissionUrl() {
+        return admissionUrl;
+    }
+
+    public void setAdmissionUrl(String admissionUrl) {
+        this.admissionUrl = admissionUrl;
+    }
+
+    public ServerResponse sendGet(String url, HashMap<String, String> headers) {
+        UrlAccess urlAccess = new UrlAccess(url, headers);
         Account account = new Account(urlAccess);
         return account.sendGet();
     }
 
-    public ServerResponse sendPost(String url, HashMap<String,String> headers,String body){
-        UrlAccess urlAccess = new UrlAccess(url,headers);
+    public ServerResponse sendPost(String url, HashMap<String, String> headers, String body) {
+        UrlAccess urlAccess = new UrlAccess(url, headers);
         Account account = new Account(urlAccess);
         return account.sendPost(body);
     }
-//        try {
-//            File file = new File(context.getFilesDir(), "bouncer_seed");
-//            if (!file.exists()) {
-//                FileOutputStream out = new FileOutputStream(file);
-//                out.write("aaa".getBytes());
-//                out.close();
-//            }
-//
-//        }catch (Exception e){
-//            throw new BouncerException(e);
-//        }
-}

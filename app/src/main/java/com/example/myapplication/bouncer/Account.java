@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -17,8 +18,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import javax.net.ssl.HttpsURLConnection;
 
 public class Account {
     private final UrlAccess urlAccess;
@@ -76,7 +75,7 @@ public class Account {
     private ServerResponse sendRequest(String method, String body) {
         try {
             URL url = new URL(this.urlAccess.getUrl());
-            HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod(method);
             for (Map.Entry<String, String> entry : this.getUpdatedHeaders().entrySet()) {
                 connection.setRequestProperty(entry.getKey(), entry.getValue());
@@ -133,7 +132,7 @@ public class Account {
             body.put("guid", this.guid);
             body.put("host", this.urlAccess.getOriginalHost());
             body.put("url", this.urlAccess.getOriginalPath());
-            body.put("'account'", this.accountKey.getAddress());
+            body.put("account", this.accountKey.getAddress());
 
             String bouncerUrl = Bouncer.getInstance().getAdmissionUrl() + "/bouncer/admission/" + urlSuffix;
             this.admissionResponse = this.sendToAdmission(bouncerUrl, body);
@@ -147,9 +146,10 @@ public class Account {
     }
 
     protected JSONObject sendToAdmission(String accessUrl, HashMap<String, String> bodyMap) {
+        BouncerLogger.debug("send to url " + accessUrl + " body " + bodyMap);
         try {
             URL url = new URL(accessUrl);
-            HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Content-Type", "application/json; utf-8");
             connection.setRequestProperty("Accept", "application/json");
@@ -161,10 +161,14 @@ public class Account {
                 outputStream.write(input);
             }
             if (connection.getResponseCode() != 200) {
-                throw new MyAppException("admission response code " + connection.getResponseCode());
+                throw new MyAppException("admission error " +
+                        connection.getResponseCode() + ":" +
+                        InputReader.readToString(connection.getErrorStream()));
             }
 
-            JSONObject jsonObject = new JSONObject(InputReader.readToString(connection.getInputStream()));
+            String responseJson = InputReader.readToString(connection.getInputStream());
+            BouncerLogger.debug(responseJson);
+            JSONObject jsonObject = new JSONObject(responseJson);
             connection.disconnect();
             return jsonObject;
         } catch (Exception e) {

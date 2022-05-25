@@ -26,8 +26,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ExecutorService executorService = Executors.newFixedThreadPool(1);
+
         Bouncer.getInstance().setContext(getBaseContext());
+        Bouncer.getInstance().setAdmissionUrl("http://local.carta.radware.com");
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());

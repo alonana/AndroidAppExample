@@ -13,6 +13,7 @@ public class ChallengeSolver {
     }
 
     public HashMap<String, String> solve() {
+        BouncerLogger.debug("solving challenge difficulty " + this.difficulty);
         long startTime = System.currentTimeMillis();
         this.nonce = 0;
         while (!this.isSolved()) {
@@ -44,6 +45,7 @@ public class ChallengeSolver {
 
         byte[] hashed = BytesUtils.sha256(combined);
         int bitsCount = BytesUtils.countTrailingZeroBits(hashed);
+        BouncerLogger.debug("nonce " +this.nonce + " zeros " + bitsCount);
         return bitsCount >= this.difficulty;
     }
 

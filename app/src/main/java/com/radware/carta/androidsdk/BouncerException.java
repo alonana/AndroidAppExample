@@ -1,4 +1,4 @@
-package com.example.myapplication.bouncer;
+package com.radware.carta.androidsdk;
 
 public class BouncerException extends RuntimeException {
     public BouncerException(String message) {

@@ -45,7 +45,7 @@ public class FirstFragment extends Fragment {
         binding.toastButton.setOnClickListener(view1 -> {
             new RestTask(response -> {
                 getActivity().runOnUiThread(() -> {
-                    Toast myToast = Toast.makeText(getActivity(), response.toString(), Toast.LENGTH_SHORT);
+                    Toast myToast = Toast.makeText(getActivity(), response, Toast.LENGTH_SHORT);
                     myToast.show();
 
                 });

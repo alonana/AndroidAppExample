@@ -1,6 +1,6 @@
 package com.example.myapplication;
 
-import com.example.myapplication.bouncer.EncryptionKey;
+import com.radware.carta.androidsdk.EncryptionKey;
 
 import org.junit.Test;
 
@@ -9,7 +9,7 @@ public class EncryptionKeyUnitTest {
     public void test() {
         EncryptionKey key = new EncryptionKey();
         String text = "Hello World! My name is Indigo Montoya. You have killed my father, prepare to die!";
-        String signature = key.signAsHexString(text);
+        String signature = key.sign(text);
         System.out.println(signature);
         key.validate(text, signature);
 

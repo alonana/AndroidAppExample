@@ -1,7 +1,9 @@
-package com.example.myapplication.bouncer;
+package com.radware.carta.androidsdk;
 
+import org.bouncycastle.crypto.signers.StandardDSAEncoding;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -66,18 +68,12 @@ public class EncryptionKey {
     }
 
     private String calculateAddress() {
-        try {
-            ECPublicKey ecPublicKey = (ECPublicKey) this.keyPair.getPublic();
-            String x = BytesUtils.bytesToHexString(ecPublicKey.getW().getAffineX().toByteArray());
-            String y = BytesUtils.bytesToHexString(ecPublicKey.getW().getAffineY().toByteArray());
-            String addressString = "{" +
-                    "\"X\":\"" + x + "\"," +
-                    "\"Y\":\"" + y + "\"" +
-                    "}";
-            return BytesUtils.toBase64(addressString);
-        } catch (Exception e) {
-            throw new BouncerException(e);
-        }
+        ECPublicKey ecPublicKey = (ECPublicKey) this.keyPair.getPublic();
+        return BytesUtils.bigIntsToBase64(
+                "X", "Y",
+                ecPublicKey.getW().getAffineX(),
+                ecPublicKey.getW().getAffineY()
+        );
     }
 
     public String exportKeyPair() {
@@ -88,7 +84,7 @@ public class EncryptionKey {
         return hexPrivateKey + " " + hexPublicKey;
     }
 
-    public String signAsHexString(String text) {
+    public String sign(String text) {
         try {
             Signature ecdsa = Signature.getInstance("SHA256withECDSA");
 
@@ -98,13 +94,19 @@ public class EncryptionKey {
             ecdsa.update(textBytes);
 
             byte[] signatureBytes = ecdsa.sign();
-            return BytesUtils.bytesToHexString(signatureBytes);
+            ECPublicKey publicKey = (ECPublicKey) this.keyPair.getPublic();
+            BigInteger order = publicKey.getParams().getOrder();
+            BigInteger[] bigInts = StandardDSAEncoding.INSTANCE.decode(order, signatureBytes);
+            BigInteger r = bigInts[0];
+            BigInteger s = bigInts[1];
+            return BytesUtils.bigIntsToBase64("r", "s", r, s);
         } catch (Exception e) {
             throw new BouncerException(e);
         }
     }
 
-    public void validate(String text, String signatureHex) {
+
+    public void validate(String text, String signature) {
         try {
             Signature ecdsa = Signature.getInstance("SHA256withECDSA");
 
@@ -113,9 +115,14 @@ public class EncryptionKey {
             byte[] textBytes = text.getBytes(StandardCharsets.UTF_8);
             ecdsa.update(textBytes);
 
-            byte[] signatureBytes = BytesUtils.hexStringToByteArray(signatureHex);
+            BigInteger[] bigInts =BytesUtils.base64ToBigInts("r","s",signature);
+            BigInteger r = bigInts[0];
+            BigInteger s = bigInts[1];
+            ECPublicKey publicKey = (ECPublicKey) this.keyPair.getPublic();
+            BigInteger order = publicKey.getParams().getOrder();
+            byte[] bytes = StandardDSAEncoding.INSTANCE.encode(order, r,s);
 
-            if (!ecdsa.verify(signatureBytes)) {
+            if (!ecdsa.verify(bytes)) {
                 throw new BouncerException("verify failed");
             }
         } catch (Exception e) {

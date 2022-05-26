@@ -1,4 +1,4 @@
-package com.example.myapplication.bouncer;
+package com.radware.carta.androidsdk;
 
 import android.content.Context;
 

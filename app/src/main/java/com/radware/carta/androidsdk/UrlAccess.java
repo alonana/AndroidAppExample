@@ -1,4 +1,4 @@
-package com.example.myapplication.bouncer;
+package com.radware.carta.androidsdk;
 
 import java.net.URL;
 import java.util.HashMap;

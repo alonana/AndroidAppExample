@@ -11,12 +11,9 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
-import com.example.myapplication.bouncer.Bouncer;
+import com.radware.carta.androidsdk.Bouncer;
 import com.example.myapplication.databinding.ActivityMainBinding;
 import com.google.android.material.snackbar.Snackbar;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
 

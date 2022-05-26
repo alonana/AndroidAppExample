@@ -1,8 +1,6 @@
-package com.example.myapplication.bouncer;
+package com.radware.carta.androidsdk;
 
 import android.content.Context;
-
-import com.example.myapplication.MyAppException;
 
 import org.json.JSONObject;
 
@@ -74,6 +72,7 @@ public class Account {
 
     private ServerResponse sendRequest(String method, String body) {
         try {
+            BouncerLogger.debug("send original url " + method + " " + this.urlAccess.getUrl());
             URL url = new URL(this.urlAccess.getUrl());
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod(method);
@@ -87,7 +86,7 @@ public class Account {
                 }
             }
             if (connection.getResponseCode() != 200) {
-                throw new MyAppException("response code " + connection.getResponseCode());
+                throw new BouncerException("response code " + connection.getResponseCode());
             }
 
             HashMap<String, String> responseHeaders = new HashMap<>();
@@ -110,10 +109,13 @@ public class Account {
     }
 
     private HashMap<String, String> getUpdatedHeaders() {
-        HashMap<String, String> headers = new HashMap<>(urlAccess.getHeaders());
+        HashMap<String, String> headers = new HashMap<>();
+        if (urlAccess.getHeaders() != null) {
+            headers.putAll(urlAccess.getHeaders());
+        }
         long epoch = System.currentTimeMillis() / 1000;
         String signText = this.accountKey.getAddress() + this.guid + epoch;
-        String signature = this.accountKey.signAsHexString(signText);
+        String signature = this.accountKey.sign(signText);
         headers.put("bouncerAccount", this.accountKey.getAddress());
         headers.put("bouncerGuid", this.guid);
         headers.put("bouncerTime", Long.toString(epoch));
@@ -123,11 +125,11 @@ public class Account {
     }
 
     private void sendCheck() {
-        HashMap<String, String> body = new HashMap<>();
+        HashMap<String, Object> body = new HashMap<>();
         this.sendToAdmissionWrapper("check", body);
     }
 
-    private void sendToAdmissionWrapper(String urlSuffix, HashMap<String, String> body) {
+    private void sendToAdmissionWrapper(String urlSuffix, HashMap<String, Object> body) {
         try {
             body.put("guid", this.guid);
             body.put("host", this.urlAccess.getOriginalHost());
@@ -139,13 +141,14 @@ public class Account {
             if (this.admissionResponse.has("directAccess") &&
                     this.admissionResponse.getBoolean("directAccess")) {
                 this.accessGranted = true;
+                BouncerLogger.debug("access granted");
             }
         } catch (Exception e) {
             throw new BouncerException(e);
         }
     }
 
-    protected JSONObject sendToAdmission(String accessUrl, HashMap<String, String> bodyMap) {
+    protected JSONObject sendToAdmission(String accessUrl, HashMap<String, Object> bodyMap) {
         BouncerLogger.debug("send to url " + accessUrl + " body " + bodyMap);
         try {
             URL url = new URL(accessUrl);
@@ -161,24 +164,25 @@ public class Account {
                 outputStream.write(input);
             }
             if (connection.getResponseCode() != 200) {
-                throw new MyAppException("admission error " +
+                throw new BouncerException("admission error " +
                         connection.getResponseCode() + ":" +
                         InputReader.readToString(connection.getErrorStream()));
             }
 
             String responseJson = InputReader.readToString(connection.getInputStream());
-            BouncerLogger.debug(responseJson);
+            BouncerLogger.debug("response from admission: " + responseJson);
             JSONObject jsonObject = new JSONObject(responseJson);
             connection.disconnect();
             return jsonObject;
         } catch (Exception e) {
-            throw new MyAppException(e);
+            throw new BouncerException(e);
         }
     }
 
     private void sendNextAction() {
         try {
             String nextAction = this.admissionResponse.getString("method");
+            BouncerLogger.debug("next action: " + nextAction);
             switch (nextAction) {
                 case "AddAccount":
                     this.actionWithChallenge("add-account");
@@ -206,7 +210,9 @@ public class Account {
                 return;
             }
 
+
             this.payTokenOnce(this.guid, this.admissionResponse.getInt("urlTokens"), this.urlAccess.getOriginalPath(), false);
+            BouncerLogger.debug("access granted after token payment");
             this.accessGranted = true;
         } catch (Exception e) {
             throw new BouncerException(e);
@@ -236,14 +242,16 @@ public class Account {
     }
 
     private void payTokenOnce(String guid, int urlTokens, String url, boolean isDebt) {
+        BouncerLogger.debug("pay token debt=" + isDebt);
         String signText = guid + Boolean.toString(isDebt).toLowerCase();
-        String signature = this.accountKey.signAsHexString(signText);
-        HashMap<String, String> body = new HashMap<>();
-        body.put("tokens", Integer.toString(urlTokens));
+        String signature = this.accountKey.sign(signText);
+        HashMap<String, Object> body = new HashMap<>();
+        body.put("tokens", urlTokens);
         body.put("url", url);
         body.put("guid", guid);
+        body.put("debt", isDebt);
         body.put("signature", signature);
-        this.sendToAdmissionWrapper("ay-token", body);
+        this.sendToAdmissionWrapper("pay-token", body);
     }
 
     private void actionWithChallenge(String method) {
@@ -251,7 +259,7 @@ public class Account {
             String challenge = this.admissionResponse.getString("challenge");
             int difficulty = this.admissionResponse.getInt("difficulty");
             ChallengeSolver solver = new ChallengeSolver(challenge, difficulty);
-            HashMap<String, String> body = solver.solve();
+            HashMap<String, Object> body = solver.solve();
             this.sendToAdmissionWrapper(method, body);
         } catch (Exception e) {
             throw new BouncerException(e);

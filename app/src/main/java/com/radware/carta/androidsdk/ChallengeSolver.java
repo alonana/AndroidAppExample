@@ -1,4 +1,4 @@
-package com.example.myapplication.bouncer;
+package com.radware.carta.androidsdk;
 
 import java.util.HashMap;
 
@@ -12,7 +12,7 @@ public class ChallengeSolver {
         this.difficulty = difficulty;
     }
 
-    public HashMap<String, String> solve() {
+    public HashMap<String, Object> solve() {
         BouncerLogger.debug("solving challenge difficulty " + this.difficulty);
         long startTime = System.currentTimeMillis();
         this.nonce = 0;
@@ -20,11 +20,11 @@ public class ChallengeSolver {
             this.nonce++;
         }
         long passedMilliseconds = System.currentTimeMillis() - startTime;
-        HashMap<String, String> result = new HashMap<>();
-        result.put("challenge", this.challenge);
-        result.put("nonce", this.get16BytesNonceHex());
-        result.put("workMilliseconds", Long.toString(passedMilliseconds));
-        result.put("workCycles", Long.toString(this.nonce));
+        HashMap<String, Object> result = new HashMap<>();
+        result.put("challenge", "0x" + this.challenge);
+        result.put("nonce", "0x" + this.get16BytesNonceHex());
+        result.put("workMilliseconds", passedMilliseconds);
+        result.put("workCycles", this.nonce);
         return result;
     }
 
@@ -45,7 +45,7 @@ public class ChallengeSolver {
 
         byte[] hashed = BytesUtils.sha256(combined);
         int bitsCount = BytesUtils.countTrailingZeroBits(hashed);
-        BouncerLogger.debug("nonce " +this.nonce + " zeros " + bitsCount);
+        BouncerLogger.debug("nonce " + this.nonce + " zeros " + bitsCount);
         return bitsCount >= this.difficulty;
     }
 

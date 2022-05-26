@@ -1,5 +1,8 @@
-package com.example.myapplication.bouncer;
+package com.radware.carta.androidsdk;
 
+import org.json.JSONObject;
+
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Base64;
@@ -40,7 +43,17 @@ public class BytesUtils {
 
     public static String toBase64(String text) {
         try {
-            return Base64.getEncoder().encodeToString(text.getBytes(StandardCharsets.UTF_8));
+            byte[] textBytes = text.getBytes(StandardCharsets.UTF_8);
+            return Base64.getEncoder().encodeToString(textBytes);
+        } catch (Exception e) {
+            throw new BouncerException(e);
+        }
+    }
+
+    public static String fromBase64(String base64Data) {
+        try {
+            byte[] textBytes = Base64.getDecoder().decode(base64Data);
+            return new String(textBytes, StandardCharsets.UTF_8);
         } catch (Exception e) {
             throw new BouncerException(e);
         }
@@ -70,10 +83,43 @@ public class BytesUtils {
             if (bit == 1) {
                 return zeroBitsCount;
             }
+            zeroBitsCount++;
             currentBit--;
         }
         return zeroBitsCount;
     }
 
+
+    public static String bigIntsToBase64(String name1, String name2, BigInteger i1, BigInteger i2) {
+        try {
+            byte[] i1Bytes = i1.toByteArray();
+            byte[] i2Bytes = i2.toByteArray();
+            String i1Hex = bytesToHexString(i1Bytes);
+            String i2Hex = bytesToHexString(i2Bytes);
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put(name1, i1Hex);
+            jsonObject.put(name2, i2Hex);
+            String jsonData = jsonObject.toString();
+            return toBase64(jsonData);
+        } catch (Exception e) {
+            throw new BouncerException(e);
+        }
+    }
+
+    public static BigInteger[] base64ToBigInts(String name1, String name2, String base64Data) {
+        try {
+            String jsonData = fromBase64(base64Data);
+            JSONObject jsonObject = new JSONObject(jsonData);
+            String i1Hex = jsonObject.getString(name1);
+            String i2Hex = jsonObject.getString(name2);
+            byte[] i1Bytes = hexStringToByteArray(i1Hex);
+            byte[] i2Bytes = hexStringToByteArray(i2Hex);
+            BigInteger i1 = new BigInteger(i1Bytes);
+            BigInteger i2 = new BigInteger(i2Bytes);
+            return new BigInteger[]{i1, i2};
+        } catch (Exception e) {
+            throw new BouncerException(e);
+        }
+    }
 
 }

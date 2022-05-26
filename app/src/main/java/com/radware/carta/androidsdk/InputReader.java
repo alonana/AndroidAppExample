@@ -1,6 +1,5 @@
-package com.example.myapplication.bouncer;
+package com.radware.carta.androidsdk;
 
-import com.example.myapplication.MyAppException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -20,7 +19,7 @@ public class InputReader {
             }
             return buffers.toString(StandardCharsets.UTF_8.toString());
         } catch (Exception e) {
-            throw new MyAppException(e);
+            throw new BouncerException(e);
         }
     }
 }

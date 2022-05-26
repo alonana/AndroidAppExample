@@ -3,8 +3,8 @@ package com.example.myapplication.rest;
 import android.os.AsyncTask;
 
 import com.example.myapplication.MyAppException;
-import com.example.myapplication.bouncer.Bouncer;
-import com.example.myapplication.bouncer.ServerResponse;
+import com.radware.carta.androidsdk.Bouncer;
+import com.radware.carta.androidsdk.ServerResponse;
 
 import org.json.JSONObject;
 

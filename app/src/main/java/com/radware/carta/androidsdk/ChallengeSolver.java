@@ -6,6 +6,8 @@ public class ChallengeSolver {
     private final String challenge;
     private final int difficulty;
     private long nonce;
+    private long lastDebugTime;
+    private int counter;
 
     public ChallengeSolver(String challenge, int difficulty) {
         this.challenge = BytesUtils.removeHexPrefix(challenge);
@@ -16,9 +18,12 @@ public class ChallengeSolver {
         BouncerLogger.debug("solving challenge difficulty " + this.difficulty);
         long startTime = System.currentTimeMillis();
         this.nonce = 0;
+        this.counter = 0;
         while (!this.isSolved()) {
             this.nonce++;
+            this.counter++;
         }
+        BouncerLogger.debug("nonce solved: " + this.nonce);
         long passedMilliseconds = System.currentTimeMillis() - startTime;
         HashMap<String, Object> result = new HashMap<>();
         result.put("challenge", "0x" + this.challenge);
@@ -45,7 +50,14 @@ public class ChallengeSolver {
 
         byte[] hashed = BytesUtils.sha256(combined);
         int bitsCount = BytesUtils.countTrailingZeroBits(hashed);
-        BouncerLogger.debug("nonce " + this.nonce + " zeros " + bitsCount);
+        if (this.counter > 1000) {
+            this.counter = 0;
+            long now = System.currentTimeMillis();
+            if (now - this.lastDebugTime > 1000) {
+                this.lastDebugTime = now;
+                BouncerLogger.debug("nonce " + this.nonce + " zeros " + bitsCount);
+            }
+        }
         return bitsCount >= this.difficulty;
     }
 
